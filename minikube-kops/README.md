@@ -16,6 +16,8 @@ Hello World!
 
 # check for current context to see if current is kops or minikube
 kubectl config view
+kubectl config get-contexts
+kubectl config set current-context minikube
 
 #check for nodes
 kubectl get nodes

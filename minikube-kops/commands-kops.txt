@@ -1,0 +1,117 @@
+# generate a new ssh key
+```
+ssh-keygen -f .ssh/id_rsa_kub
+```
+# we will upload the public key to our instances for ssh
+
+# export credentials needed for AWS
+```
+export AWS_PROFILE=“personal”
+export AWS_ACCESS_KEY_ID=
+export AWS_SECRET_ACCESS_KEY=
+
+```
+# create an S3 bucket
+```
+export KOPS_STATE_STORE=s3://kops-state-b4292
+```
+
+# create Clusters with kops
+```
+kops create cluster --name=nodejs.hamedhaddadian.com --zones=us-west-2a --node-count=2 --node-size=t2.micro --master-size=t2.micro --dns-zone=hamedhaddadian.com --ssh-public-key=/Users/hamedh/.ssh/id_rsa_kub.pub
+
+```
+
+# deploy clusters
+```
+kops update cluster nodejs.hamedhaddadian.com --yes
+```
+
+
+# List clusters
+```
+kops get cluster
+```
+
+# setup kubectl
+kubectl config view
+kubectl config get-contexts
+kubectl config set current-context nodejs.hamedhaddadian.com
+
+# view nodes
+kubectl get node
+NAME                                          STATUS    ROLES     AGE       VERSION
+ip-172-20-35-145.us-west-2.compute.internal   Ready     master    29m       v1.7.11
+ip-172-20-54-168.us-west-2.compute.internal   Ready     node      27m       v1.7.11
+ip-172-20-59-231.us-west-2.compute.internal   Ready     node      27m       v1.7.11
+
+
+
+# create pods
+
+two options:
+### Option 1)
+# create pods
+kubectl run hame-node-test-kops --image=hhaddadian/hamed-node-minikube-kops --port=3000
+
+#check the pods
+kubectl get pods
+NAME                                  READY     STATUS    RESTARTS   AGE
+hame-node-test-kops-562031477-87rmk   1/1       Running   0          37s
+
+# check deployments
+kubectl get deployments
+NAME                  DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+hame-node-test-kops   1         1         1            1           1m
+
+# expose ports
+kubectl expose deployments hame-node-test-kops --type=NodePort
+
+# get service
+kubectl get service
+NAME                  TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+hame-node-test-kops   NodePort    100.66.171.233   <none>        3000:31095/TCP   19s
+
+# check route53 for api.nodejs.hamedhaddadian.com:31095
+# open security group for master node for this port
+
+
+### Option 2)
+
+# create pod-node-kops.yml
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hamed-node.minikube.com
+  labels:
+    app: hamed-node-app
+spec:
+  containers:
+  - name: hamednodejsminikube-container
+    image: hhaddadian/hamed-node-minikube-kops
+    ports:
+    - containerPort: 3000
+
+```
+
+#Create the pods
+kubectl create -f pod-node-kops.yml
+
+# check the pod
+kubectl get pods
+NAME                      READY     STATUS    RESTARTS   AGE
+hamed-node.minikube.com   1/1       Running   0          1m
+
+# Expose the service
+kubectl expose pod hamed-node.minikube.com --type=NodePort --name hamednode
+
+# if we check the Route53 we see there is a new record
+api.jodejs.hamedhaddadian.com
+
+# check the port
+kubectl get service
+NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+hamednode    NodePort    100.68.19.222   <none>        3000:30520/TCP   1m
+
+# open port 30520 on Master Security groups

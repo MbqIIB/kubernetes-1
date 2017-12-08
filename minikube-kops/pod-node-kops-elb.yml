@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hamed-node.minikube.com
+  labels:
+    app: hamed-node-app
+spec:
+  containers:
+  - name: hamednodejsminikube-container
+    image: hhaddadian/hamed-node-minikube-kops
+    ports:
+    - name: nodejs-port
+      containerPort: 3000

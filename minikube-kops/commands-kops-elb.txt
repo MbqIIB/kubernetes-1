@@ -1,0 +1,95 @@
+# lets clean everything
+kubectl delete deployments --all
+kubectl delete pods --all
+
+
+# generate a new ssh key
+```
+ssh-keygen -f .ssh/id_rsa_kub
+```
+# we will upload the public key to our instances for ssh
+
+# export credentials needed for AWS
+```
+export AWS_PROFILE=“personal”
+export AWS_ACCESS_KEY_ID=
+export AWS_SECRET_ACCESS_KEY=
+
+```
+# create an S3 bucket
+```
+export KOPS_STATE_STORE=s3://kops-state-b4292
+```
+
+create Clusters with kops
+```
+kops create cluster --name=nodejs.hamedhaddadian.com --zones=us-west-2a --node-count=2 --node-size=t2.micro --master-size=t2.micro --dns-zone=hamedhaddadian.com --ssh-public-key=/Users/hamedh/.ssh/id_rsa_kub.pub
+
+```
+# deploy clusters
+```
+kops update cluster nodejs.hamedhaddadian.com --yes
+```
+
+
+# List clusters
+```
+kops get cluster
+```
+
+# setup kubectl
+kubectl config view
+kubectl config get-contexts
+kubectl config set current-context nodejs.hamedhaddadian.com
+
+# view nodes
+```
+kubectl get node
+NAME                                          STATUS    ROLES     AGE       VERSION
+ip-172-20-35-145.us-west-2.compute.internal   Ready     master    29m       v1.7.11
+ip-172-20-54-168.us-west-2.compute.internal   Ready     node      27m       v1.7.11
+ip-172-20-59-231.us-west-2.compute.internal   Ready     node      27m       v1.7.11
+
+```
+
+# create pod-node-kops-elb.yml
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hamed-node.minikube.com
+  labels:
+    app: hamed-node-app
+spec:
+  containers:
+  - name: hamednodejsminikube-container
+    image: hhaddadian/hamed-node-minikube-kops
+    ports:
+    - name: nodejs-port
+      containerPort: 3000
+
+```
+
+# create pods
+kubectl create -f pod-node-kops-elb.yml
+
+
+# create pod-node-kops-service.yml
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: helloworld-service
+spec:
+  ports:
+  - port: 80
+    targetPort: nodejs-port
+    protocol: TCP
+  selector:
+    app: helloworld
+  type: LoadBalancer
+```
+
+# get the Service
+kubectl get service
+helloworld-service    LoadBalancer   100.68.48.179    ad60cd42edbec...   80:31696/TCP     15s
