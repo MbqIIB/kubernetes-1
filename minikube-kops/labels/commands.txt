@@ -1,0 +1,86 @@
+kubectl get nodes --show-labels
+
+# lets check our labels
+kubectl get nodes --show-labels
+NAME                                         STATUS    ROLES     AGE       VERSION   LABELS
+ip-172-20-39-38.us-west-2.compute.internal   Ready     master    3d        v1.7.11   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/instance-type=t2.micro,beta.kubernetes.io/os=linux,failure-domain.beta.kubernetes.io/region=us-west-2,failure-domain.beta.kubernetes.io/zone=us-west-2a,kubernetes.io/hostname=ip-172-20-39-38.us-west-2.compute.internal,kubernetes.io/role=master,node-role.kubernetes.io/master=
+ip-172-20-42-57.us-west-2.compute.internal   Ready     node      3d        v1.7.11   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/instance-type=t2.micro,beta.kubernetes.io/os=linux,failure-domain.beta.kubernetes.io/region=us-west-2,failure-domain.beta.kubernetes.io/zone=us-west-2a,kubernetes.io/hostname=ip-172-20-42-57.us-west-2.compute.internal,kubernetes.io/role=node,node-role.kubernetes.io/node=
+ip-172-20-48-62.us-west-2.compute.internal   Ready     node      3d        v1.7.11   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/instance-type=t2.micro,beta.kubernetes.io/os=linux,failure-domain.beta.kubernetes.io/region=us-west-2,failure-domain.beta.kubernetes.io/zone=us-west-2a,kubernetes.io/hostname=ip-172-20-48-62.us-west-2.compute.internal,kubernetes.io/role=node,node-role.kubernetes.io/node=
+
+
+
+# create a deployment file
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+    name: helloworld-deployment1
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: helloworld
+    spec:
+      containers:
+      - name: hamed-labels
+        image: hhaddadian/hamed-node-minikube-kops
+        ports:
+        - name: nodejs-port
+          containerPort: 3000
+      nodeSelector:
+        hardware: high-spec
+# as you can see we are using nodeSelectors to find the node we would like to use
+
+# create a deployment
+```
+kubectl create -f helloworld-nodeselector.yml
+deployment "helloworld-deployment1" created
+kubectl get deployments
+NAME                     DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+helloworld-deployment1   3         3         3            0           5s
+
+# as you can see all of our pods are pending
+kubectl get pods
+NAME                                      READY     STATUS    RESTARTS   AGE
+helloworld-deployment1-3518753704-2xfdf   0/1       Pending   0          3m
+helloworld-deployment1-3518753704-96z41   0/1       Pending   0          3m
+helloworld-deployment1-3518753704-rfc4r   0/1       Pending   0          3m
+
+# lets describe one of our pod
+kubectl describe pod helloworld-deployment1-3518753704-2xfdf
+# and we would see the following msg
+Warning  FailedScheduling  3s (x19 over 4m)  default-scheduler  No nodes are available that match all of the following predicates:: MatchNodeSelector (3), PodToleratesNodeTaints (1).
+
+
+```
+# how ever when we check deployment status we have 0 Available since we dont have the correct label on our Nodes
+
+# lets label one of our nodes
+
+```
+kubectl get nodes
+NAME                                         STATUS    ROLES     AGE       VERSION
+ip-172-20-39-38.us-west-2.compute.internal   Ready     master    3d        v1.7.11
+ip-172-20-42-57.us-west-2.compute.internal   Ready     node      3d        v1.7.11
+ip-172-20-48-62.us-west-2.compute.internal   Ready     node      3d        v1.7.11
+
+
+kubectl label nodes ip-172-20-42-57.us-west-2.compute.internal hardware=high-spec
+node "ip-172-20-42-57.us-west-2.compute.internal" labeled
+
+kubectl get nodes --show-labels | grep hardware
+```
+
+# after tagging the nodes we can see our pods are deployed and deployments are ready
+```
+kubectl get deployments
+NAME                     DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+helloworld-deployment1   3         3         3            3           10m
+
+kubectl get pods
+NAME                                      READY     STATUS    RESTARTS   AGE
+helloworld-deployment1-3518753704-2xfdf   1/1       Running   0          10m
+helloworld-deployment1-3518753704-96z41   1/1       Running   0          10m
+helloworld-deployment1-3518753704-rfc4r   1/1       Running   0          10m
+
+```

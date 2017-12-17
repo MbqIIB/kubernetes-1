@@ -1,0 +1,135 @@
+# useful commands
+
+```
+kubectl get deployments  # information about deployments
+kubectl get rs                    # information about replica sets
+kubectl get pods —show-labels        # get pods, and also show labels attached to those pods
+kubectl rollout status deployment/helloworld-deployment  #get deployment status
+kubectl set image deployment/helloworld-deployment k8s-demo=k8s-demo:2   # run K8s-demo with the image label version2
+kubectl edit deployment/helloworld-deployment. # edit the deployment object
+kubectl rollout status deployment/helloworld-deploymet # get the status of the rollout
+kubectl rollout history deployment/helloworld-deployment   # get the rollout history
+kubectl rollout undo deployment/helloworld-deployment.  # rollback to previous version
+kubectl rollout undo deployment/helloworld-deployment —to-revision=n # rollback to any version version
+
+```
+# create a deployments
+```
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: helloworld-deployment
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: helloworld
+    spec:
+      containers:
+      - name: hamed-deployment
+        image: hhaddadian/hamed-node-minikube-kops
+        ports:
+        - containerPort: 3000
+
+```
+
+
+# deploy the deployments
+```
+kubectl create -f deployment.yml  --record # we can add record for checking history
+```
+# get deployments
+```
+kubectl get deployments
+NAME                    DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+helloworld-deployment   3         3         3            3           7s
+```
+
+# get replica set
+```
+kubectl get rs
+NAME                               DESIRED   CURRENT   READY     AGE
+helloworld-deployment-2240940102   3         3         3         2m
+```
+
+# get pods
+```
+kubectl get pods --show-labels
+NAME                                     READY     STATUS    RESTARTS   AGE       LABELS
+helloworld-deployment-2240940102-bdwz9   1/1       Running   0          4m        app=helloworld,pod-template-hash=2240940102
+helloworld-deployment-2240940102-rw15r   1/1       Running   0          4m        app=helloworld,pod-template-hash=2240940102
+helloworld-deployment-2240940102-x2rg9   1/1       Running   0          4m        app=helloworld,pod-template-hash=2240940102
+
+```
+
+# get deployment status
+
+```
+kubectl rollout status deployment/helloworld-deployment
+deployment "helloworld-deployment" successfully rolled out
+
+```
+
+# expose deployments
+
+```
+kubectl expose deployments helloworld-deployment --type=NodePort
+```
+
+# now lets check the service because expose creates a service
+
+```
+kubectl get service
+```
+
+## lets test a deployment
+create a new docker image with tag 2
+
+```
+kubectl set image deployments/helloworld-deployment hamed-deployment=hhaddadian/hamed-node-minikube-kops:2
+# hamed-deployments are name of the containers we defined in our deployment.yml file
+```
+
+# lets check the status
+```
+kubectl rollout status deployment/helloworld-deployment
+```
+
+# check history of our rollouts
+```
+kubectl rollout history deployment/helloworld-deployment
+```
+
+# lets revert back deployments
+```
+kubectl rollout undo deployment/helloworld-deployment
+```
+
+
+### edit number of history to keep
+
+```
+kubectl edit deployment/helloworld-deployment
+
+add revisionHistoryLimit: 100
+
+spec:
+  replicas: 3
+  revisionHistoryLimit: 100
+
+```
+
+# to rollback to a specific revision
+# lets rollback to revision 3 using this command kubectl rollout history deployment/helloworld-deployment
+```
+kubectl rollout undo deployment/helloworld-deployment --to-revision=3
+```
+
+
+
+# to test deployments
+```
+ ab -n 100 -c 100 http://34.216.143.62:32009/
+
+ ```

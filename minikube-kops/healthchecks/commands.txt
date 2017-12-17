@@ -1,0 +1,40 @@
+# create deployemts and healthchecks
+
+```
+kubectl create -f healthchecks.yml
+deployment "helloworld-deployment" created
+```
+
+```
+kubectl get pods
+NAME                                     READY     STATUS    RESTARTS   AGE
+helloworld-deployment-1528136945-cxkhw   1/1       Running   0          1m
+helloworld-deployment-1528136945-vl9gn   1/1       Running   0          1m
+helloworld-deployment-1528136945-wcd6d   1/1       Running   0          1m
+```
+
+```
+kubectl describe pod helloworld-deployment-1528136945-wcd6d
+# we should see the following line
+#     Liveness:     http-get http://:nodejs-port/ delay=15s timeout=30s period=10s #success=1 #failure=3
+
+```
+
+# if pod is not working or fails healthchecks kubernetes will create a new pod
+
+# to edit a deployments and change healthchecks
+```
+kubectl edit deployments/helloworld-deployment
+
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /
+    port: nodejs-port
+    scheme: HTTP
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  successThreshold: 1
+  timeoutSeconds: 30
+
+```

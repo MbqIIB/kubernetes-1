@@ -1,0 +1,101 @@
+# Note: Best to use deployments and not replication controller
+#Scaling in Kubernetes can be done using Replication Controller
+Replication controller will ensure a specified number of pod replicas will run at all time
+
+A pods created with replica controller will automatically be replaced if failed, get deleted or terminated
+
+using replication controller is also recommended if you just want to make sure 1 pod is always running, even after reboots
+
+
+# check pods
+kubectl get pods
+
+# check replication controllers
+kubectl get rc
+
+
+# create a replication controllers rc-node-kops.yml
+```
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: helloworld-controller1
+spec:
+  replicas: 2
+  selector:
+    app: heoworld
+  template:
+    metadata:
+      labels:
+        app: heoworld
+    spec:
+      containers:
+      - name: hamed-replication
+        image: hhaddadian/nodejs
+        ports:
+        - name: nodejs-port
+          containerPort: 3000
+
+
+```
+
+# Create the replication controller
+```
+kubectl create -f rc-node-kops.yml
+```
+
+
+# check pods
+kubectl get pods
+NAME                           READY     STATUS    RESTARTS   AGE
+helloworld-controller1-1rj9x   1/1       Running   0          1m
+helloworld-controller1-rxh94   1/1       Running   0          1m
+
+
+
+# describe pods
+```
+kubectl describe pod helloworld-controller1-rxh94
+```
+
+# # health check
+# Components
+```
+kubectl get componentstatuses
+```
+
+# Scale up
+```
+kubectl scale --replicas=3 -f rc-node-kops.yml
+```
+
+# checking replica sets
+kubectl get rc
+```
+NAME                     DESIRED   CURRENT   READY     AGE
+helloworld-controller1   3         3         3         17m
+```
+# checking pods
+kubectl get pods
+```
+NAME                           READY     STATUS    RESTARTS   AGE
+helloworld-controller1-1rj9x   1/1       Running   0          17m
+helloworld-controller1-btk4g   1/1       Running   0          35s
+helloworld-controller1-rxh94   1/1       Running   0          17m
+
+```
+
+
+
+#  scale down
+```
+kubectl scale --replicas=1 rc/helloworld-controller1
+replicationcontroller "helloworld-controller1" scaled
+```
+```
+kubectl get pods
+NAME                           READY     STATUS        RESTARTS   AGE
+helloworld-controller1-1rj9x   1/1       Running       0          35m
+helloworld-controller1-btk4g   1/1       Terminating   0          17m
+helloworld-controller1-rxh94   1/1       Terminating   0          35m
+```

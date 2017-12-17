@@ -1,0 +1,20 @@
+# first we are going to create a secret
+
+next we are bringup two containers mysql and wordpress which both use secerts to
+create envirnment variable for db password
+
+# create secrets
+```
+kubectl create -f wordpress-secrets.yml
+```
+
+# next create deployments
+
+```
+kubectl create -f wordpress-single-deployments-deployments-no-volumes.yml
+```
+
+# last step is to create a Service
+```
+kubectl create -f wordpress-service.yml 
+```

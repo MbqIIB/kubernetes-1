@@ -1,0 +1,26 @@
+# test locally
+
+step 1) build docker image
+docker build -t hamed-node-minikube-kops .
+
+# check the image
+docker images
+
+# run locally
+docker run -p 3000:3000 -i -t hamed-node-minikube-kops
+
+# test the site
+localhost:3000
+# we should get
+Hello World!
+
+
+
+# step 2)
+Tag image for dockerhub
+docker login
+docker tag imageid your-login/docker-demo
+docker tag 781a891e16ba hhaddadian/hamed-node-minikube-kops
+
+push image to docker hub
+docker push hhaddadian/hamed-node-minikube-kops

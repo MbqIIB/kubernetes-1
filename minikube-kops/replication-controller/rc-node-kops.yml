@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: helloworld-controller1
+spec:
+  replicas: 2
+  selector:
+    app: heoworld
+  template:
+    metadata:
+      labels:
+        app: heoworld
+    spec:
+      containers:
+      - name: hamed-replication
+        image: hhaddadian/nodejs
+        ports:
+        - name: nodejs-port
+          containerPort: 3000
