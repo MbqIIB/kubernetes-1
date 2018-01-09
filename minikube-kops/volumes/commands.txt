@@ -1,0 +1,27 @@
+#Manual Provisioning
+
+# create volume in the same zone kops is setup
+# 10GB
+
+
+aws ec2 create-volume —size 10 —region eu-west-1 —availability-zone eu-west-1a —volume-type gp2
+
+# after get the volume id and update the yaml file
+
+# kubectl create -f helloworld-with-volume.yml
+
+# kubectl get pod
+
+kubect exec #podnamehere -i -t -- bash
+
+# now we should have a volume called myvol
+ls -al /myvol/
+
+# now if we save any file inside /myvol/
+echo "hello" > /myvol/test.txt
+
+kubectl get node
+
+# now we can drain a node and prepare it to go offline
+kubectl drain #nodename
+kubectl drain #nodename --force

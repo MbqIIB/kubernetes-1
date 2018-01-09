@@ -1,0 +1,22 @@
+1) storage.yml
+
+
+2) pv-claim.yml
+
+kubectl get pvc
+3) wordpress-secrets.yml
+
+4) wordpress-db.yml
+
+5) wordpress-db-service.yml
+
+
+6) wordpress-web.yml
+# this uses efs so we need to create efs from amazon
+aws efs create-file-system --creation-token 2
+aws efs create-mount-target --file-system-id # filsystemid form previous command \
+--subnet-id # same subnet as our cluster --security-groups
+grab volume id for efs and replace it here
+
+7) wordpress-web-service.yml
+elb

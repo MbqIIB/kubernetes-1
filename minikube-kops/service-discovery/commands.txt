@@ -1,0 +1,89 @@
+# Service Discovery using DNS
+
+# step1 : create a docker image
+```
+docker build -t hhaddadian/hamed-node-mysql .
+```
+
+# need to add we have defined a different file as our applicaiton in
+
+A) package.json   "start": "node index-db.js",
+B) helloworld-db.yml using command         command:  ["node", "index-db.js"]
+
+Both way works
+
+#  create secrets
+```
+kubectl create -f secrets.yml
+kubectl get secrets
+
+```
+# create a database Pod
+```
+kubectl create -f database.yml
+```
+
+# create a service for database pod
+```
+kubectl create -f database-service.yml
+```
+
+# create a deployment for our application
+```
+kubectl create -f helloworld-db.yml
+```
+
+# create a service for our application
+```
+kubectl create -f helloworld-db-service.yml
+```
+
+# get the url for services
+```
+kubectl get svc
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+database-service        NodePort    100.68.228.158   <none>        3306:31871/TCP   1h
+helloworld-db-service   NodePort    100.67.245.237   <none>        3000:31630/TCP   39s
+
+```
+
+# use the masternode:31630 url
+curl 34.215.104.91:31630
+Hello World! You are visitor number 5
+
+
+# to test DNS
+```
+kubectl run -i --tty busybox --image=busybox --restart=Never -- sh
+If you don't see a command prompt, try pressing enter.
+/ # nslookup database-service
+Server:    100.64.0.10
+Address 1: 100.64.0.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      database-service
+Address 1: 100.68.228.158 database-service.default.svc.cluster.local
+/ # nslookup helloworld-db-service
+Server:    100.64.0.10
+Address 1: 100.64.0.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      helloworld-db-service
+Address 1: 100.67.245.237 helloworld-db-service.default.svc.cluster.local
+
+```
+
+
+```
+telnet helloworld-db-service 3000
+GET /
+
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: text/html; charset=utf-8
+Content-Length: 37
+ETag: W/"25-rn5uqEDMXsmWIlIUH7iA+ZOGwsg"
+Date: Sun, 17 Dec 2017 12:13:42 GMT
+Connection: close
+
+Hello World! You are visitor number 6
+
+```

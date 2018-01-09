@@ -1,0 +1,51 @@
+kubectl create -f hpa.yml3
+
+```
+kubectl get hpa
+NAME                     REFERENCE                TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
+hpa-example-autoscaler   Deployment/hpa-example   0% / 50%   1         10        3          2m
+
+```
+
+# lets run a loadgenerator
+
+```
+kubectl run -i --tty load-generator --image=busybox /bin/sh
+
+```
+
+# get files
+```
+# since we used hpa-example in our service   name: hpa-example
+# we should be able to use the name of the service
+
+If you don't see a command prompt, try pressing enter.
+/ # wget hpa-example.default.svc.cluster.local:31001
+/ # cat index.html
+OK!/ #
+
+# lets run it in a loop
+/ # while true; do wget -q -O- http://hpa-example.default.svc.cluster.local:31001; done
+
+
+# it takes a little time
+kubectl get hpa
+NAME                     REFERENCE                TARGETS      MINPODS   MAXPODS   REPLICAS   AGE
+hpa-example-autoscaler   Deployment/hpa-example   148% / 50%   1         10        3          10m
+
+```
+
+```
+# now we see we have more pod
+kubectl get pods | grep hpa
+hpa-example-199734367-6mmp0                 1/1       Running   0          11m
+hpa-example-199734367-9q1fs                 0/1       Pending   0          11m
+hpa-example-199734367-j6wtl                 1/1       Running   0          11m
+hpa-example-199734367-pr1gd                 0/1       Pending   0          8s
+hpa-example-199734367-r9ns5                 0/1       Pending   0          8s
+
+kubectl get hpa
+NAME                     REFERENCE                TARGETS      MINPODS   MAXPODS   REPLICAS   AGE
+hpa-example-autoscaler   Deployment/hpa-example   214% / 50%   1         10        5          13m
+
+```

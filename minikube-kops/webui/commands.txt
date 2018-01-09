@@ -1,0 +1,34 @@
+Kubernetes comes with a Web UI you can use instead of the kubectl commands
+
+A) Overview of running applications on your cluster
+B) Create and modifying individual Kubernetes resources and workloads ( kubectl create or delete)
+C) Retrive information on the state of resources ( like kubectl describe pod)
+
+URL:
+
+# this is the repo for the webui
+https://github.com/kubernetes/dashboard
+
+# repo for kops web ui
+https://github.com/kubernetes/kops/blob/master/docs/addons.md
+wget https://raw.githubusercontent.com/kubernetes/kops/master/addons/kubernetes-dashboard/v1.7.1.yaml
+kubectl create -f v1.7.1.yaml
+
+# browse to
+https://api.kops.hamedhaddadian.com/ui
+
+# get password from
+kubectl config view
+
+https://kubernetes-master/ui
+# if you can not access it( for instance if it is not enabled on your deploy type), you can install it manually using:
+$ kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+
+
+# if a password is required you can retrive the password by entering:
+kubectl config view
+
+
+# for minikube we can use the following command to launch dashboard
+minikube dashboard
+minikube dashboard —url

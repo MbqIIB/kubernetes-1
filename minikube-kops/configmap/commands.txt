@@ -1,0 +1,130 @@
+# we have a configuration file for our reverseproxy.conf
+
+setup kubenerntes configuration to kops aws
+```
+kubectl config get-contexts
+
+kubectl get nodes
+NAME                                          STATUS    AGE       VERSION
+ip-172-20-32-174.us-west-2.compute.internal   Ready     16d       v1.7.11
+ip-172-20-39-227.us-west-2.compute.internal   Ready     16d       v1.7.11
+ip-172-20-46-54.us-west-2.compute.internal    Ready     16d       v1.7.11
+
+kubectl config set current-context kops.hamedhaddadian.com
+
+```
+
+# create config map from file
+
+```
+kubectl create configmap nginx-config --from-file reversproxy.conf
+
+kubectl get configmap
+NAME           DATA      AGE
+nginx-config   1
+
+# we can view the config map in yaml format as well
+
+kubectl get configmap nginx-config -o yaml
+apiVersion: v1
+data:
+  reversproxy.conf: |
+    server {
+        Listen      80;
+        server_name localhost;
+
+        location / {
+            proxy_bind  127.0.0.1;
+            proxy_pass  http://127.0.0.1:3000;
+        }
+
+        error_page  500 502 503 504   /50x.html;
+        location = /50x.html {
+            root   /usr/share/nginx/html;
+        }
+    }
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2018-01-02T18:56:12Z
+  name: nginx-config
+  namespace: default
+  resourceVersion: "1835995"
+  selfLink: /api/v1/namespaces/default/configmaps/nginx-config
+  uid: 9a500e9a-efee-11e7-9832-026fdf20e14e
+
+
+```
+
+
+
+# lets create our Pod
+
+ we have two containers
+
+ nginx
+
+ path is the name of the file inside the docker container so inside /etc/nginx/conf.d/reverseproxy.conf
+
+ nodejs app
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: helloworld-nginx1
+  labels:
+    app: helloworld-nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.11
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/nginx/conf.d
+  - name: hamedsecondcontainer
+    image: hhaddadian/nodejs
+    ports:
+    - containerPort: 3000
+  volumes:
+    - name: config-volume
+      configMap:
+        name: nginx-config
+        items:
+        - key: reversproxy.conf
+          path: reverseproxy.conf
+```
+
+# create Pod
+```
+kubectl create -f nginx.yml
+```
+
+# connect to containers
+
+```
+-t pod -c container name which we can get from kubectl describe pod
+kubectl exec -i -t helloworld-nginx1 -c nginx -- bash
+
+```
+
+
+```
+cat /etc/nginx/conf.d/reverseproxy.conf
+server {
+    listen      80;
+    server_name localhost;
+
+    location / {
+        proxy_bind  127.0.0.1;
+        proxy_pass  http://127.0.0.1:3000;
+    }
+
+    error_page  500 502 503 504   /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}
+
+```

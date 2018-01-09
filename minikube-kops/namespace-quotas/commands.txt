@@ -1,0 +1,59 @@
+# first we created a new namespace and set resourcequota
+kubectl create -f resourcequota.yml
+
+# create deployment with no ResourceQuota or we need to setup default quotas
+kubectl create -f helloworld-no-quotas.yml
+
+kubectl get deploy --namespace=myspace # we see non deployment has been running
+
+kubect get rs --namespace=myspace
+# desired of 3 but current and ready are 0
+
+kubectl describe rs helloworld-deployment-2707 --namespace=myspace
+# we see is forbidden: failed quota: compute quota must specify limits.cpu, limits.memory request.memory
+
+# delete the deployment
+kubectl delete deploy helloword-deployment --namespace=myspace
+
+
+
+
+## with quotas
+we want:
+cpu: 200m
+memory: 0.5 Gi
+limit is: 400m cpu and 1 Gi memory
+
+kubectl create -f helloworld-with-quota.yml
+
+kubectl get pods --name-space=myspace
+# however we see two pods running
+Reason is because
+
+```
+resources:
+  requests:
+    cpu: 200m
+    memory: 0.5Gi
+  limits:
+    cpu: 400m
+    memory: 1Gi
+
+```
+above we are running each container with 200m cpu and 0.5Gi of memory however
+we meet the limit with two containers
+200m * 2 = 400 m
+0.5 Gi * 2 = 1 Gi
+
+
+kubectl get quota --namespace=myspace
+kubectl describe quota/compute-quota --namespace=myspace
+# here we can see our limits are met already
+
+
+# setup default quotas
+kubect create -f default.yml
+
+# after this we dont need to setup our default
+
+kubectl describe limits <limits-name> --namespace=myspace

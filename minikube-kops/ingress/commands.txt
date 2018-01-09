@@ -1,0 +1,15 @@
+Its an alternative to external Loadbalancer and nodePorts
+
+    # Ingress allows you to easily expose services that need to be accessible from outside to the cluster
+
+# With ingress you can run your own ingress controller ( basically loadbalancer ) within the kubernetes cluster
+
+# there are default ingress controller available, or you can write your own ingress controller
+
+we can also setup rules based on hosts or paths
+
+for example host-x goes to pod1
+
+            host-y goes to pod2
+
+and /api/v2 goes to a different pod
