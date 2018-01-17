@@ -1,0 +1,189 @@
+# Install Kubefed
+
+# linux
+```
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/kubernetes-client-linux-amd64.tar.gz
+
+tar -xzvf kubernetes-client-linux-amd64.tar.gz
+
+sudo mv kubernetes/client/bin/* /usr/loca/bin
+
+sudo chmod +x /usr/local/bin/kube*
+
+```
+
+# OS X
+```
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/kubernetes-client-darwin-amd64.tar.gz
+
+tar -xzvf kubernetes-client-darwin-amd64.tar.gz
+
+sudo mv kubernetes/client/bin/* /usr/loca/bin
+
+sudo chmod +x /usr/local/bin/kube*
+```
+# Windows
+
+```
+curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/kubernetes-client-windows-amd64.tar.gz
+
+tar -xzvf kubernetes-client-windows-amd64.tar.gz
+```
+
+# setup the clusters
+
+# using kops create multiple clusters
+
+```
+export AWS_PROFILE=personal
+# cluster 1 in eu-west-1a
+
+kops create cluster --name=kubernetes.hamedhaddadian.com --state=s3://kops-state-b429b --zones=eu-west-1a --node-count=2 --node-size=t2.small --master-size=t2.small --dns-zone=kubernetes.hamedhaddadian.com
+
+# cluster 2 in eu-west-1b
+
+kops create cluster --name=kubernetes-2.hamedhaddadian.com --state=s3://kops-state-b429b --zones=eu-west-1b --node-count=2 --node-size=t2.small --master-size=t2.small --dns-zone=kubernetes-2.hamedhaddadian.com
+
+kops update cluster kubernetes.hamedhaddadian.com --state=s3://kops-state-b429b --yes
+
+kops update cluster kubernetes-2.hamedhaddadian.com --state=s3://kops-state-b429b --yes
+
+```
+
+# check configuration
+```
+in route53 we have 3 zones
+
+kubernetes.hamedhaddadian.com
+
+kubernetes-2.hamedhaddadian.com
+
+federated.hamedhaddadian.com
+
+```
+
+## important for IAM roles
+
+```
+to make the federated zone accessible via IAM role we need to modify our IAM role created by kops
+
+copy the hostID for federated.hamedhaddadian.com
+
+nodes.kuberenetes.hamedhaddadian.com
+
+master.kubernetes.hamedhaddadian.com
+
+edit policy attached
+
+arn:aws:route53:::hostedzone/hostzoneID
+
+```
+
+# check nodes for each kops cluster
+
+```
+kubect get nodes
+
+kubectl config get-contexts
+
+# we should see both of our cluster config
+
+# change config
+
+kubectl config use-context kubernetes.hamedhaddadian.com
+
+kubectl config use-context kubernetes-2.hamedhaddadian.com
+
+```
+
+# Initialize federation
+
+```
+# name space is federation-system
+
+# install new apiserver and controller for federated context is on the first cluster
+
+kubefed init federated --host-cluster-context=kubernetes.hamedhaddadian.com --dns-provider="aws-route53" --dns-zone-name="federated.hamedhaddadian.com."
+```
+
+
+# Join clusters
+```
+# change context to new federated
+kubectl config use-context federated # important, if you don't switch, the next command might fail with an API not found error
+
+# verify the context using
+kubectl config get-contexts
+
+kubefed join kubernetes-2 --host-cluster-context=kubernetes.hamedhaddadian.com --cluster-context=kubernetes-2.nhamedhaddadian.com
+
+kubefed join kubernetes-1 --host-cluster-context=kubernetes.hamedhaddadian.com --cluster-context=kubernetes.hamedhaddadian.com
+
+kubectl create namespace default --context=federated
+```
+
+# to deploy
+
+```
+now that we have created a namespace we just need to pass in the --context=federated
+
+e.g.
+
+kubectl --context=federated create -f helloworld-deployment.yaml
+
+kubectl --context=federated create -f helloworld-service.yaml
+```
+
+
+# check pods
+```
+kubectl --context=kubernetes.hamedhaddadian.com get pods
+
+# we have two pods
+
+kubectl --context=kubernetes-2.hamedhaddadian.com get pods
+
+# we have two pods
+
+in our deployment we specified 4 replicas two on each
+
+kubectl --context=kubernetes.hamedhaddadian.com get svc
+
+# we have a helloworld service
+
+
+# and another one on the second cluster
+
+kubectl --context=kubernetes-2.hamedhaddadian.com get svc
+
+# another one for federated Service
+
+kubectl --context=federated.hamedhaddadian.com get svc
+
+```
+
+
+# Overview
+```
+now we should have 6 instance 2 nodes and one master for each kops cluster we could even do multi-region clusters in different regions
+
+loadbalancer:
+
+one for federation api
+
+one for cluster 1
+
+one for cluster 2
+
+router53:
+
+we will have 3 cname record for Service
+
+# BUG
+we might need to add our own record for two loadbalancer that was created for each kops cluster if not created it automatically from controller
+
+create record set > hello-service-manual > alias > to each loadbalancer
+
+here we can decide if we want to have failover or latency based
+
+```
