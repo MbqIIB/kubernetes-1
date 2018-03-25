@@ -92,7 +92,6 @@ spec:
     image: hhaddadian/hamed-node-minikube-kops
     ports:
     - containerPort: 3000
-
 ```
 
 #Create the pods
